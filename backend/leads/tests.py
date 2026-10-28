@@ -2,7 +2,9 @@ import threading
 
 from django.contrib.auth import get_user_model
 from django.db import connections
+from django.test import override_settings
 from rest_framework.test import APIClient, APITestCase
+from rest_framework.settings import api_settings
 
 from leads.models.lead import Lead, Status
 
@@ -238,3 +240,56 @@ class LeadCreationTests(APITestCase):
             self.assertEqual(response.status_code, 200)
 
         self.assertEqual(Lead.objects.filter(email="julia@email.com").count(), 1)
+
+    @override_settings(
+        REST_FRAMEWORK={
+            "DEFAULT_THROTTLE_CLASSES": [
+                "rest_framework.throttling.AnonRateThrottle",
+            ],
+            "DEFAULT_THROTTLE_RATES": {
+                "anon": "2/min",
+            },
+        }
+    )
+    def test_throttle_limit(self):
+        print(api_settings.DEFAULT_THROTTLE_CLASSES)
+        print(api_settings.DEFAULT_THROTTLE_RATES)
+        payload = {
+            "name": "maria",
+            "email": "maria@email.com",
+            "whatsapp": "21966666666",
+            "source": "direct",
+        }
+
+        response = self.client.post("/api/leads/", payload, format="json")
+        self.assertEqual(response.status_code, 200)
+
+        payload = {
+            "name": "maria",
+            "email": "maria@email.com",
+            "whatsapp": "21966666666",
+            "source": "direct",
+        }
+
+        response = self.client.post("/api/leads/", payload, format="json")
+        self.assertEqual(response.status_code, 200)
+
+        payload = {
+            "name": "maria",
+            "email": "maria@email.com",
+            "whatsapp": "21966666666",
+            "source": "direct",
+        }
+
+        response = self.client.post("/api/leads/", payload, format="json")
+        self.assertEqual(response.status_code, 200)
+
+        payload = {
+            "name": "maria",
+            "email": "maria@email.com",
+            "whatsapp": "21966666666",
+            "source": "direct",
+        }
+
+        response = self.client.post("/api/leads/", payload, format="json")
+        self.assertEqual(response.status_code, 429)
